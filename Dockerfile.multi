@@ -15,4 +15,21 @@ RUN ./mvnw package
 FROM eclipse-temurin:17-jre-jammy as production
 EXPOSE 8080
 COPY --from=build /app/target/spring-petclinic-*.jar /spring-petclinic.jar
-CMD ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/spring-petclinic.jar"]
+
+RUN mkdir -p /usr/local/newrelic
+#COPY ./newrelic/newrelic.jar /usr/local/newrelic/newrelic.jar
+ENV JAVA_OPTS="$JAVA_OPTS -javaagent:/usr/local/newrelic/newrelic.jar"
+
+ADD ./newrelic /usr/local/newrelic
+
+RUN ls -laR /usr/local/newrelic
+
+ENV NEW_RELIC_APP_NAME="petclinic-docker"
+
+ENV JAVA_OPTS="$JAVA_OPTS -Dnewrelic.config.app_name='petclinic-docker'"
+
+ENV NEW_RELIC_LICENSE_KEY="$NEW_RELIC_LICENSE"
+
+ENV JAVA_OPTS="$JAVA_OPTS -Dnewrelic.config.license_key='$NEW_RELIC_LICENSE'"
+
+CMD ["java", "-javaagent:/usr/local/newrelic/newrelic.jar", "-jar", "/spring-petclinic.jar"]
